@@ -1,0 +1,68 @@
+services:
+  # --- Main Application Service ---
+  aac-actual-budget:
+    image: "actualbudget/actual-server:26.10.0-alpine"
+    container_name: "aac-actual-budget"
+    hostname: "actual"
+    restart: "unless-stopped"
+
+
+    environment:
+      PUID: "1000"
+      TZ: "Europe/Berlin"
+      PGID: "1000"
+      ACTUAL_OIDC_CLIENT_ID: "${ACTUAL_OIDC_CLIENT_ID:?set ACTUAL_OIDC_CLIENT_ID in .env (see .env.example)}"
+      ACTUAL_OIDC_CLIENT_SECRET: "${ACTUAL_OIDC_CLIENT_SECRET:?set ACTUAL_OIDC_CLIENT_SECRET in .env (see .env.example)}"
+      ACTUAL_OIDC_ISSUER_URL: "${ACTUAL_OIDC_ISSUER_URL:?set ACTUAL_OIDC_ISSUER_URL in .env (see .env.example)}"
+    volumes:
+      - "/export/docker/aac-actual-budget/data:/data"
+
+    networks:
+      - interconnect
+      - secured
+      - stack_internal
+
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.aac-actual-budget.rule: "Host(`actual.example.com`)"
+      traefik.http.routers.aac-actual-budget.entrypoints: "websecure"
+      traefik.http.routers.aac-actual-budget.tls: "true"
+      traefik.http.routers.aac-actual-budget.tls.certresolver: "ionos"
+      traefik.docker.network: "services-secured"
+      traefik.http.services.aac-actual-budget.loadbalancer.server.port: "5006"
+      traefik.http.services.aac-actual-budget.loadbalancer.server.scheme: "http"
+      auto-dns.createWildcard.aac-actual-budget: "false"
+      auto-dns.customDNS.aac-actual-budget: "true"
+      auto-dns.customDOMAIN.aac-actual-budget: "example.com"
+      auto-dns.customHost.aac-actual-budget: "actual"
+      homepage.group: "Finanzen - Dokumente - Organisation"
+      homepage.name: "Actual Budget"
+      homepage.href: "https://actual.example.com"
+      homepage.icon: "/icons/actual-budget.svg"
+      homepage.description: "Private einfache Finanz- & Budgetverwaltung"
+
+
+    security_opt:
+    - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '10'
+
+
+
+networks:
+  secured:
+    name: "services-secured"
+    external: true
+  exposed:
+    name: "services-exposed"
+    external: true
+  interconnect:
+    name: "docker-default"
+    external: true
+  stack_internal:
+    name: "aac-actual-budget_stack_internal"
+    driver: "bridge"
+

@@ -1,0 +1,83 @@
+service:
+  name: aac-actual-budget
+  friendly_name: Actual Budget
+  image_repo: actualbudget/actual-server
+  image_tag: 26.10.0-alpine
+  description: Private einfache Finanz- & Budgetverwaltung
+  icon: /icons/actual-budget.svg
+  category: Finanzen - Dokumente - Organisation
+  stage: prod
+  hostname: actual
+ports:
+- name: web
+  port: 5006
+  protocol: TCP
+config:
+  domain_name: example.com
+  generate_hostname: false
+  integrations:
+    homepage:
+      enabled: true
+    autodns:
+      enabled: true
+    traefik:
+      enabled: true
+      cert_resolver: ionos
+      entrypoint: websecure
+  schema_version: 2
+stage_overrides:
+  prod:
+    service:
+      hostname: actual
+    config:
+      generate_hostname: false
+secrets:
+  ACTUAL_OIDC_CLIENT_ID: CHANGE_ME
+  ACTUAL_OIDC_CLIENT_SECRET: CHANGE_ME
+  ACTUAL_OIDC_ISSUER_URL: CHANGE_ME
+volumes:
+  data:
+    description: User data for Actual Budget
+deployment_strategy:
+  main:
+    enabled: true
+    target_stage: prod
+  dev:
+    enabled: true
+    target_stage: dev
+  test:
+    enabled: false
+    target_stage: test
+  ansible-dev:
+    enabled: true
+    target_stage: dev
+  iac-dev:
+    enabled: true
+    target_stage: dev
+  template-dev:
+    enabled: true
+    target_stage: dev
+deployments:
+  docker_compose:
+    restart_policy: unless-stopped
+    host_base_path: /export/docker
+    security_opt:
+    - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '10'
+    volumes:
+    - data:/data
+    environment:
+      PUID: '{{ vars.PUID }}'
+      TZ: '{{ vars.TZ }}'
+      PGID: '{{ vars.PGID }}'
+      ACTUAL_OIDC_CLIENT_ID: '{{ secrets.ACTUAL_OIDC_CLIENT_ID }}'
+      ACTUAL_OIDC_CLIENT_SECRET: '{{ secrets.ACTUAL_OIDC_CLIENT_SECRET }}'
+      ACTUAL_OIDC_ISSUER_URL: '{{ secrets.ACTUAL_OIDC_ISSUER_URL }}'
+vars:
+  PUID: '1000'
+  TZ: Europe/Berlin
+  PGID: '1000'
